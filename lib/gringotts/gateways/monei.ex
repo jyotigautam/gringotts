@@ -26,16 +26,16 @@ defmodule Gringotts.Gateways.Monei do
   optional arguments for transactions with the MONEI gateway. The following keys
   are supported:
 
-  | Key                 | Remark | Status          |
-  | ----                | ---    | ----            |
-  | `billing_address`   |        | Not implemented |
-  | `cart`              |        | Not implemented |
-  | `customParameters`  |        | Not implemented |
-  | `customer`          |        | Not implemented |
-  | `invoice`           |        | Not implemented |
-  | `merchant`          |        | Not implemented |
-  | `shipping_address`  |        | Not implemented |
-  | `shipping_customer` |        | Not implemented |
+  | Key                 | Remark                                                                                        | Status          |
+  | ----                | ---                                                                                           | ----            |
+  | `billing_address`   |                                                                                               | Not implemented |
+  | `cart`              |                                                                                               | Not implemented |
+  | `customParameters`  |                                                                                               | Not implemented |
+  | `customer`          | Annotate transactions with customer info on your Monei account, and helps in risk management. | **Implemented** |
+  | `invoice`           |                                                                                               | Not implemented |
+  | `merchant`          |                                                                                               | Not implemented |
+  | `shipping_address`  |                                                                                               | Not implemented |
+  | `shipping_customer` |                                                                                               | Not implemented |
 
   > All these keys are being implemented, track progress in
   > [issue #36](https://github.com/aviabird/gringotts/issues/36)!
@@ -191,7 +191,7 @@ defmodule Gringotts.Gateways.Monei do
         paymentType: "PA",
         amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
         currency: Money.currency(amount)
-      ] ++ card_params(card)
+      ] ++ card_params(card) ++ extra_params(opts)
 
     auth_info = Keyword.fetch!(opts, :config)
     commit(:post, "payments", params, auth_info)
@@ -386,7 +386,7 @@ defmodule Gringotts.Gateways.Monei do
       "card.expiryMonth": card.month |> Integer.to_string() |> String.pad_leading(2, "0"),
       "card.expiryYear": card.year |> Integer.to_string(),
       "card.cvv": card.verification_code,
-      paymentBrand: card.brand
+      "paymentBrand": card.brand
     ]
   end
 
@@ -444,6 +444,15 @@ defmodule Gringotts.Gateways.Monei do
     }
   end
 
+  defp extra_params(opts) do
+    Enum.reduce(opts, [], fn {k, v}, acc ->
+      case k do
+        :customer -> acc ++ make_customer v
+        _ -> acc
+      end
+    end)
+  end
+
   defp validate_params(params) do
     currency = params[:currency]
     if currency && currency not in @supported_currencies do
@@ -473,6 +482,10 @@ defmodule Gringotts.Gateways.Monei do
     end
   end
 
+  defp make_customer(customer) do
+    Enum.into(customer, [], fn {k, v} -> {"customer.#{k}", v} end)
+  end
+  
   defp base_url(opts), do: opts[:test_url] || @base_url
   defp version(opts), do: opts[:api_version] || @version
 end

@@ -100,8 +100,6 @@ defmodule Gringotts.Gateways.Trexle do
   }
 
   iex> address = %Address{
-<<<<<<< HEAD
-=======
     street1: "123 Main",
     street2: "Suite 100",
     city: "New York",
@@ -112,21 +110,6 @@ defmodule Gringotts.Gateways.Trexle do
   }
 
   iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118" ,billing_address: address, description: "Store Purchase 1437598192"]
-
-  iex> @address %Address{
->>>>>>> 47b334a... modify trexle, remove stripe
-    street1: "123 Main",
-    street2: "Suite 100",
-    city: "New York",
-    region: "NY",
-    country: "US",
-    postal_code: "11111",
-    phone: "(555)555-5555"
-  }
-
-  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118" ,billing_address: address, description: "Store Purchase 1437598192"]
-
-  iex> options = [email: "john@trexle.com", ip_address: "66.249.79.118" ,billing_address: @address, description: "Store Purchase 1437598192"]
 
   iex> amount = 50
 
@@ -243,30 +226,6 @@ defmodule Gringotts.Gateways.Trexle do
   end
 
   defp card_params(%CreditCard{} = card) do
-<<<<<<< HEAD
-=======
-    [
-      "card[name]": CreditCard.full_name(card),
-      "card[number]": card.number,
-      "card[expiry_year]": card.year,
-      "card[expiry_month]": card.month,
-      "card[cvc]": card.verification_code
-    ]
-  end
-
-  defp address_params(%Address{} = address) do
-    [
-      "card[address_line1]": address.street1,
-      "card[address_line2]": address.street2,
-      "card[address_city]": address.city,
-      "card[address_postcode]": address.postal_code,
-      "card[address_state]": address.region,
-      "card[address_country]": address.country
-  end
-
-  defp card_params(%CreditCard{} = card) do
-    card = Map.from_struct(card)
->>>>>>> 47b334a... modify trexle, remove stripe
     [
       "card[name]": CreditCard.full_name(card),
       "card[number]": card.number,

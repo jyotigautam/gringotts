@@ -115,7 +115,7 @@ defmodule Gringotts.Gateways.Monei do
                           last_name: "Potter",
                           number: "4200000000000000",
                           year: 2099, month: 12,
-                          verification_code:  "123",
+                          verification_code: "123",
                           brand: "VISA"}
   iex> customer = %{"givenName": "Harry",
                     "surname": "Potter",
@@ -170,14 +170,17 @@ defmodule Gringotts.Gateways.Monei do
 
   @base_url "https://test.monei-api.net"
   @default_headers ["Content-Type": "application/x-www-form-urlencoded", charset: "UTF-8"]
-  @supported_currencies ["EUR", "USD", "GBP", "NAD", "TWD", "VUV", "NZD", "NGN",
-  "NIO", "NGN", "NOK", "PKR", "PAB", "PGK", "PYG", "PEN", "NPR", "ANG", "AWG",
-  "PHP", "QAR", "RUB", "RWF", "SHP", "STD", "SAR", "SCR", "SLL", "SGD", "VND",
-  "SOS", "ZAR", "ZWL", "YER", "SDG", "SZL", "SEK", "CHF", "SYP", "TJS", "THB",
-  "TOP", "TTD", "AED", "TND", "TRY", "AZN", "UGX", "MKD", "EGP", "GBP", "TZS",
-  "UYU", "UZS", "WST", "YER", "RSD", "ZMW", "TWD", "AZN", "GHS", "RSD", "MZN",
-  "AZN", "MDL", "TRY", "XAF", "XCD", "XOF", "XPF", "MWK", "SRD", "MGA", "AFN",
-  "TJS", "AOA", "BYN", "BGN", "CDF", "BAM", "UAH", "GEL", "PLN", "BRL", "CUC"]
+
+  @supported_currencies [
+    "EUR", "USD", "GBP", "NAD", "TWD", "VUV", "NZD", "NGN", "NIO", "NGN", "NOK",
+    "PKR", "PAB", "PGK", "PYG", "PEN", "NPR", "ANG", "AWG", "PHP", "QAR", "RUB",
+    "RWF", "SHP", "STD", "SAR", "SCR", "SLL", "SGD", "VND", "SOS", "ZAR", "ZWL",
+    "YER", "SDG", "SZL", "SEK", "CHF", "SYP", "TJS", "THB", "TOP", "TTD", "AED",
+    "TND", "TRY", "AZN", "UGX", "MKD", "EGP", "GBP", "TZS", "UYU", "UZS", "WST",
+    "YER", "RSD", "ZMW", "TWD", "AZN", "GHS", "RSD", "MZN", "AZN", "MDL", "TRY",
+    "XAF", "XCD", "XOF", "XPF", "MWK", "SRD", "MGA", "AFN", "TJS", "AOA", "BYN",
+    "BGN", "CDF", "BAM", "UAH", "GEL", "PLN", "BRL", "CUC"
+  ]
 
   @version "v1"
 
@@ -224,17 +227,19 @@ defmodule Gringotts.Gateways.Monei do
   a sample `card`.
 
       iex> amount = %{value: Decimal.new(42), currency: "EUR"}
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
       iex> auth_result = Gringotts.authorize(Gringotts.Gateways.Monei, amount, card, opts)
       iex> auth_result.id # This is the authorization ID
   """
-  @spec authorize(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
+  @spec authorize(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def authorize(amount, card = %CreditCard{}, opts) do
     params =
       [
         paymentType: "PA",
-        amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
+        amount:
+          amount |> Money.value() |> Decimal.to_float() |> :erlang.float_to_binary(decimals: 2)
       ] ++ card_params(card)
+
     commit(:post, "payments", params, [{:currency, Money.currency(amount)} | opts])
   end
 
@@ -258,18 +263,20 @@ defmodule Gringotts.Gateways.Monei do
   authorized a payment worth $35 by referencing the obtained authorization `id`.
 
       iex> amount = %{value: Decimal.new(42), currency: "EUR"}
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
       iex> capture_result = Gringotts.capture(Gringotts.Gateways.Monei, 35, auth_result.id, opts)
   """
-  @spec capture(Money.t, String.t(), keyword) :: {:ok | :error, Response}
+  @spec capture(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def capture(amount, payment_id, opts)
 
   def capture(amount, <<payment_id::bytes-size(32)>>, opts) do
     params = [
       paymentType: "CP",
-      amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
+      amount:
+        amount |> Money.value() |> Decimal.to_float() |> :erlang.float_to_binary(decimals: 2),
       currency: Money.currency(amount)
     ]
+
     commit(:post, "payments/#{payment_id}", params, opts)
   end
 
@@ -285,17 +292,19 @@ defmodule Gringotts.Gateways.Monei do
   without (pre) authorization.
 
   iex> amount = %{value: Decimal.new(42), currency: "EUR"}
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
       iex> purchase_result = Gringotts.purchase(Gringotts.Gateways.Monei, amount, card, opts)
   """
-  @spec purchase(Money.t, CreditCard.t(), keyword) :: {:ok | :error, Response}
+  @spec purchase(Money.t(), CreditCard.t(), keyword) :: {:ok | :error, Response}
   def purchase(amount, card = %CreditCard{}, opts) do
     params =
       [
         paymentType: "DB",
-        amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
+        amount:
+          amount |> Money.value() |> Decimal.to_float() |> :erlang.float_to_binary(decimals: 2),
         currency: Money.currency(amount)
       ] ++ card_params(card)
+
     commit(:post, "payments", params, opts)
   end
 
@@ -328,7 +337,7 @@ defmodule Gringotts.Gateways.Monei do
   authorization. Remember that our `capture/3` example only did a partial
   capture.
 
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
       iex> void_result = Gringotts.void(Gringotts.Gateways.Monei, auth_result.id, opts)
   """
   @spec void(String.t(), keyword) :: {:ok | :error, Response}
@@ -356,16 +365,18 @@ defmodule Gringotts.Gateways.Monei do
   similarily for captures).
 
       iex> amount = %{value: Decimal.new(42), currency: "EUR"}
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
       iex> refund_result = Gringotts.refund(Gringotts.Gateways.Monei, purchase_result.id, amount)
   """
-  @spec refund(Money.t, String.t(), keyword) :: {:ok | :error, Response}
+  @spec refund(Money.t(), String.t(), keyword) :: {:ok | :error, Response}
   def refund(amount, <<payment_id::bytes-size(32)>>, opts) do
     params = [
       paymentType: "RF",
-      amount: amount |> Money.value |> Decimal.to_float |> :erlang.float_to_binary(decimals: 2),
+      amount:
+        amount |> Money.value() |> Decimal.to_float() |> :erlang.float_to_binary(decimals: 2),
       currency: Money.currency(amount)
     ]
+
     commit(:post, "payments/#{payment_id}", params, opts)
   end
 
@@ -389,7 +400,7 @@ defmodule Gringotts.Gateways.Monei do
   The following session shows how one would store a card (a payment-source) for
   future use.
 
-      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code:  "123", brand: "VISA"}
+      iex> card = %Gringotts.CreditCard{first_name: "Jo", last_name: "Doe", number: "4200000000000000", year: 2099, month: 12, verification_code: "123", brand: "VISA"}
       iex> store_result = Gringotts.store(Gringotts.Gateways.Monei, card, [])
   """
   @spec store(CreditCard.t(), keyword) :: {:ok | :error, Response}
@@ -417,7 +428,7 @@ defmodule Gringotts.Gateways.Monei do
       "card.expiryMonth": card.month |> Integer.to_string() |> String.pad_leading(2, "0"),
       "card.expiryYear": card.year |> Integer.to_string(),
       "card.cvv": card.verification_code,
-      "paymentBrand": card.brand
+      paymentBrand: card.brand
     ]
   end
 
@@ -431,15 +442,25 @@ defmodule Gringotts.Gateways.Monei do
     ]
 
     url = "#{base_url(opts)}/#{version(opts)}/#{endpoint}"
-    case expand_params opts do
-      {:error, reason} -> 
+
+    case expand_params(opts) do
+      {:error, reason} ->
         {:error, Response.error(description: reason)}
+
       validated_params ->
         network_response =
           case method do
-            :post -> HTTPoison.post(url, {:form, params ++ validated_params ++ auth_params}, @default_headers)
-            :delete -> HTTPoison.delete(url <> "?" <> URI.encode_query(auth_params))
+            :post ->
+              HTTPoison.post(
+                url,
+                {:form, params ++ validated_params ++ auth_params},
+                @default_headers
+              )
+
+            :delete ->
+              HTTPoison.delete(url <> "?" <> URI.encode_query(auth_params))
           end
+
         respond(network_response)
     end
   end
@@ -456,11 +477,12 @@ defmodule Gringotts.Gateways.Monei do
           {:ok, results} -> {:ok, Response.success([{:id, decoded_json["id"]} | results])}
           {:error, errors} -> {:ok, Response.error([{:id, decoded_json["id"]} | errors])}
         end
+
       {:error, _} ->
         {:error, Response.error(raw: body, code: :undefined_response_from_monei)}
     end
   end
-  
+
   defp respond({:ok, %{status_code: status_code, body: body}}) do
     {:error, Response.error(code: status_code, raw: body)}
   end
@@ -479,17 +501,40 @@ defmodule Gringotts.Gateways.Monei do
   defp expand_params(params) do
     Enum.reduce_while(params, [], fn {k, v}, acc ->
       case k do
-        :currency -> if valid_currency?(v), do: {:cont, [{:currency, v} | acc]}, else: {:halt, {:error, "Invalid currency"}}
-        :customer -> {:cont, acc ++ make("customer", v)}
-        :merchant -> {:cont, acc ++ make("merchant", v)}
-        :billing -> {:cont, acc ++ make("billing", v)}
-        :shipping -> {:cont, acc ++ make("shipping", v)}
-        :invoice_id -> {:cont, [{"merchantInvoiceId", v} | acc]}
-        :transaction_id -> {:cont, [{"merchantTransactionId", v} | acc]}
-        :category -> {:cont, [{"transactionCategory", v} | acc]}
-        :shipping_customer -> {:cont, acc ++ make("shipping.customer", v)}
-        :custom -> {:cont, acc ++ make_custom(v)}
-        _ -> {:cont, acc}
+        :currency ->
+          if valid_currency?(v),
+            do: {:cont, [{:currency, v} | acc]},
+            else: {:halt, {:error, "Invalid currency"}}
+
+        :customer ->
+          {:cont, acc ++ make("customer", v)}
+
+        :merchant ->
+          {:cont, acc ++ make("merchant", v)}
+
+        :billing ->
+          {:cont, acc ++ make("billing", v)}
+
+        :shipping ->
+          {:cont, acc ++ make("shipping", v)}
+
+        :invoice_id ->
+          {:cont, [{"merchantInvoiceId", v} | acc]}
+
+        :transaction_id ->
+          {:cont, [{"merchantTransactionId", v} | acc]}
+
+        :category ->
+          {:cont, [{"transactionCategory", v} | acc]}
+
+        :shipping_customer ->
+          {:cont, acc ++ make("shipping.customer", v)}
+
+        :custom ->
+          {:cont, acc ++ make_custom(v)}
+
+        _ ->
+          {:cont, acc}
       end
     end)
   end
@@ -497,7 +542,7 @@ defmodule Gringotts.Gateways.Monei do
   defp valid_currency?(currency) do
     currency in @supported_currencies
   end
-  
+
   defp verification_result(%{"result" => result} = data) do
     {address, zip_code} = @avs_code_translator[result["avsResponse"]]
     code = result["code"]
@@ -525,7 +570,7 @@ defmodule Gringotts.Gateways.Monei do
   defp make_custom(custom_map) do
     Enum.into(custom_map, [], fn {k, v} -> {"customParameters[#{k}]", "#{v}"} end)
   end
-  
+
   defp base_url(opts), do: opts[:config][:test_url] || @base_url
   defp version(opts), do: opts[:config][:api_version] || @version
 end

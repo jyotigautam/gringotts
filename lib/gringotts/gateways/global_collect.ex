@@ -200,6 +200,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
       skipAuthentication: opts[:skipAuthentication],
       card: add_card(payment)
     }
+
   end
 
   defp auth_digest(path, secret_api_key, time) do

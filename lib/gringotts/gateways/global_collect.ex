@@ -200,7 +200,10 @@ defmodule Gringotts.Gateways.GlobalCollect do
       skipAuthentication: opts[:skipAuthentication],
       card: add_card(payment)
     }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 90677f9... Implementation of Gateway methods
   end
 
   defp auth_digest(path, secret_api_key, time) do

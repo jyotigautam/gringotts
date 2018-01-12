@@ -85,26 +85,26 @@ defmodule Gringotts.Gateways.GlobalCollect do
     void(id, @options)
   end
 
-  @spec authorize(float, CreditCard.t, list) :: map
+  @spec authorize(Money.t, CreditCard.t, list) :: map
   def authorize(amount, payment, opts) do
     params = create_params_for_auth_or_purchase(amount, payment, opts)
     commit(:post, "payments", params, opts)
   end
 
-  @spec capture(String.t, float, list) :: map
+  @spec capture(String.t, Money.t, list) :: map
   def capture(id, amount, opts) do
     params = create_params_for_capture(amount, opts)
     commit(:post, "payments/#{id}/approve", params, opts)
   end
 
-  @spec purchase(float, CreditCard.t, list) :: map
+  @spec purchase(Money.t, CreditCard.t, list) :: map
   def purchase(amount, payment, opts) do
    {:ok,response} = authorize(amount, payment, opts)
    payment_Id = response.raw["payment"]["id"]
    capture(payment_Id, amount, opts)
   end
 
-  @spec refund(float, String.t, list) :: map
+  @spec refund(Money.t, String.t, list) :: map
   def refund(amount, id, opts) do
     params = create_params_for_refund(amount, opts)
     commit(:post, "payments/#{id}/refund", params, opts)
@@ -213,14 +213,18 @@ defmodule Gringotts.Gateways.GlobalCollect do
   end
 
   defp commit(method, path, params, opts) do
-    time = date
-    sha_signature = auth_digest(path, @secret_api_key, time) |> Base.encode64
-    auth_token = "GCS v1HMAC:#{@api_key_id}:#{sha_signature}"
-    headers = [{"Content-Type", "application/json"}, {"Authorization", auth_token}, {"Date", time}]
+    headers = create_headers(path)
     data = Poison.encode!(params)
     url = "#{@base_url}#{path}"
     response = HTTPoison.request(method, url, data, headers)
     response |> respond
+  end
+
+  defp create_headers(path) do
+    time = date
+    sha_signature = auth_digest(path, @secret_api_key, time) |> Base.encode64
+    auth_token = "GCS v1HMAC:#{@api_key_id}:#{sha_signature}"
+    headers = [{"Content-Type", "application/json"}, {"Authorization", auth_token}, {"Date", time}]
   end
 
   defp date() do

@@ -89,12 +89,9 @@ defmodule Gringotts.Mixfile do
     ]
   end
 
-<<<<<<< HEAD
   defp groups_for_modules do
      [
       "Gateways": ~r/^Gringotts.Gateways.?/,
      ]
   end
-=======
->>>>>>> b9950c1... global collect payment gateway addition
 end

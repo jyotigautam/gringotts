@@ -4,10 +4,10 @@ defmodule Gringotts.Gateways.GlobalCollect do
   @api_key_id "e5743abfc360ed12"
   @secret_api_key "Qtg9v4Q0G13sLRNcClWhHnvN1kVYWDcy4w9rG8T86XU="
 
-
   use Gringotts.Gateways.Base
   import Poison, only: [decode: 1]
-  alias Gringotts.{Response, CreditCard, Address}
+  alias Gringotts.{Response, CreditCard, Address, Money}
+
   @brand_map  %{
     "visa": "1",
     "american_express": "2",
@@ -15,6 +15,11 @@ defmodule Gringotts.Gateways.GlobalCollect do
     "discover": "128",
     "jcb": "125",
     "diners_club": "132"
+  }
+
+  @amount %{
+    amount: 500,
+    currency: "USD"
   }
 
   @shippingAddress %{
@@ -58,26 +63,26 @@ defmodule Gringotts.Gateways.GlobalCollect do
     surname: "Runner"
   }
 
-  @options [ email: "john@trexle.com", description: "Store Purchase 1437598192", currency: "USD", merchantCustomerId: "234", customer_name: "Jyoti", doB: "19490917", company: "asma", email: "jyotigautam108@gmail.com", phone: "7798578174", order_id: "2323", invoice: @invoice, billingAddress: @billingAddress, shippingAddress: @shippingAddress, name: @name, skipAuthentication: "true" ]
+  @options [ email: "john@trexle.com", description: "Store Purchase 1437598192", merchantCustomerId: "234", customer_name: "Jyoti", dob: "19490917", company: "asma", email: "jyotigautam108@gmail.com", phone: "7798578174", order_id: "2323", invoice: @invoice, billingAddress: @billingAddress, shippingAddress: @shippingAddress, name: @name, skipAuthentication: "true" ]
 
   def auth() do
-    authorize(5, @payment, @options)
+    authorize(@amount, @payment, @options)
   end
 
-  def capt() do
-    capture("000000122600000000380000100001", 2500, @options)
+  def capt(id) do
+    capture(id, @amount, @options)
   end
 
   def pur() do
-    purchase(5, @payment, @options)
+    purchase(@amount, @payment, @options)
   end
 
-  def ref() do
-    refund(5, "000000122600000000380000100001", @options)
+  def ref(id) do
+    refund(@amount, id, @options)
   end
 
-  def voi() do
-    void("000000122600000000380000100001", @options)
+  def voi(id) do
+    void(id, @options)
   end
 
   @spec authorize(float, CreditCard.t, list) :: map
@@ -141,8 +146,8 @@ defmodule Gringotts.Gateways.GlobalCollect do
 
   defp add_money(amount, options) do
     %{
-      amount: amount,
-      currencyCode: options[:currency]
+      amount: Money.value(amount),
+      currencyCode: Money.currency(amount)
     }
   end
 
@@ -150,7 +155,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
     %{
       merchantCustomerId: options[:merchantCustomerId],
       personalInformation: personal_info(options),
-      dateOfBirth: options[:doB],
+      dateOfBirth: options[:dob],
       companyInformation: company_info(options),
       billingAddress: options[:billingAddress],
       shippingAddress: options[:shippingAddress],
@@ -200,10 +205,6 @@ defmodule Gringotts.Gateways.GlobalCollect do
       skipAuthentication: opts[:skipAuthentication],
       card: add_card(payment)
     }
-<<<<<<< HEAD
-
-=======
->>>>>>> 90677f9... Implementation of Gateway methods
   end
 
   defp auth_digest(path, secret_api_key, time) do

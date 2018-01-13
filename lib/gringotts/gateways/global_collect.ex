@@ -1,7 +1,8 @@
 defmodule Gringotts.Gateways.GlobalCollect do
 
-  @base_url "https://api-sandbox.globalcollect.com/v1/1226/"
+  @base_url "https://api-sandbox.globalcollect.com/v1/"
   @api_key_id "e5743abfc360ed12"
+  @merchant_id "1226"
   @secret_api_key "Qtg9v4Q0G13sLRNcClWhHnvN1kVYWDcy4w9rG8T86XU="
 
   use Gringotts.Gateways.Base
@@ -215,7 +216,7 @@ defmodule Gringotts.Gateways.GlobalCollect do
   defp commit(method, path, params, opts) do
     headers = create_headers(path)
     data = Poison.encode!(params)
-    url = "#{@base_url}#{path}"
+    url = "#{@base_url}#{@merchant_id}/#{path}"
     response = HTTPoison.request(method, url, data, headers)
     response |> respond
   end
